@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Anjani Courier - Pro</title>
+    <title>Anjani Courier - Cloud Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
         :root { --primary: #f37021; --secondary: #2196F3; --danger: #ff4d4d; --success: #4CAF50; --dark: #2c3e50; }
@@ -14,11 +14,7 @@
 
         .no-print { padding: 12px; text-align: center; background: #fff; border-bottom: 2px solid #ddd; position: sticky; top: 0; z-index: 100; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         
-        .page-break { 
-            width: 210mm; height: 297mm; padding: 8mm 10mm; margin: 15px auto; 
-            background: white; box-sizing: border-box; border: 1px solid #ccc; 
-            page-break-after: always; overflow: hidden; position: relative;
-        }
+        .page-break { width: 210mm; height: 297mm; padding: 8mm 10mm; margin: 15px auto; background: white; box-sizing: border-box; border: 1px solid #ccc; page-break-after: always; overflow: hidden; position: relative; }
         
         .header-section { display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 5px; }
         .logo-main { font-size: 28px; font-weight: bold; font-style: italic; line-height: 1; }
@@ -30,8 +26,6 @@
         .drs-info { width: 42%; font-size: 13px; line-height: 1.4; }
         .drs-title { font-weight: bold; font-size: 18px; text-decoration: underline; margin-bottom: 2px; }
 
-        .search-icon-btn { background: #f37021; color: white; border: none; cursor: pointer; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         th, td { border: 1.5px solid #000; padding: 4px 6px; text-align: left; overflow: hidden; }
         th { background-color: #f2f2f2; font-size: 11px; text-align: center; height: 25px; }
@@ -41,20 +35,10 @@
         .col-awb { width: 130px; text-align: center; }
         .col-sign { width: 250px; }
 
-        .awb-text { font-size: 16px !important; display: block; margin-bottom: 2px; }
-
-        .row-actions { position: absolute; right: 2px; top: 2px; display: none; gap: 3px; }
-        tr:hover .row-actions { display: flex; }
-        .action-btn { font-size: 9px; padding: 2px 4px; border: none; cursor: pointer; color: white; border-radius: 3px; }
-
         .modal { display: none; position: fixed; z-index: 200; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
         .modal-content { background: white; margin: 2% auto; padding: 25px; width: 400px; border-radius: 15px; box-shadow: 0 15px 40px rgba(0,0,0,0.4); position: relative; border-top: 8px solid var(--primary); }
         
         .btn { padding: 10px 18px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; color: white; font-size: 13px; transition: 0.3s; }
-
-        /* Tracking Result Style */
-        .track-card { margin-top:20px; padding:15px; border-radius:12px; background:#f8f9fa; border-left:5px solid var(--success); box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: left; }
-        .track-status { background:var(--success); color:white; padding:8px; border-radius:6px; text-align:center; font-weight:bold; margin-top:10px; }
 
         @media print {
             .no-print, .modal, .top-info, .row-actions, .search-icon-btn { display: none !important; }
@@ -67,204 +51,64 @@
 
 <div class="top-info">
     DATE: <input type="date" id="drsDatePicker" onchange="updateDrsDate(this.value)" style="width:140px;">
-    BOY: 
-    <input type="text" id="deliveryBoy" list="boyList" placeholder="NAME" oninput="renderTable()">
+    BOY: <input type="text" id="deliveryBoy" list="boyList" placeholder="NAME" oninput="renderTable()">
     <datalist id="boyList"></datalist>
 
-    AREA: 
-    <input type="text" id="areaName" list="areaList" placeholder="AREA" oninput="renderTable()">
+    AREA: <input type="text" id="areaName" list="areaList" placeholder="AREA" oninput="renderTable()">
     <datalist id="areaList"></datalist>
-
-    <button class="search-icon-btn" onclick="openTrackModal()" title="Track AWB">🔍</button>
 </div>
 
 <div class="no-print">
     <button class="btn" style="background: var(--secondary);" onclick="validateAndOpenDoc()">+ ADD DOC</button>
-    <button class="btn" style="background: var(--success);" onclick="saveOrUpdate()">💾 SAVE ALL</button>
-    <button class="btn" style="background: #9b59b6;" onclick="showHistory()">📜 HISTORY</button>
+    <button id="saveBtn" class="btn" style="background: var(--success);" onclick="saveToCloud()">☁️ SAVE TO GOOGLE SHEET</button>
     <button class="btn" style="background: var(--primary);" onclick="window.print()">🖨️ PRINT</button>
-    <button class="btn" style="background: #e67e22;" onclick="openMasterModal()">⚙️ MASTER SETUP</button>
-    <button class="btn" style="background: #546e7a;" onclick="openAddrModal()">🏠 BRANCH SETUP</button>
-    <button class="btn" style="background: #7f8c8d;" onclick="resetAll()">🆕 NEW SESSION</button>
-</div>
-
-<div id="masterModal" class="modal">
-    <div class="modal-content" style="width:450px;">
-        <h3 style="color:var(--dark); margin-top:0;">⚙️ MASTER SETUP (BOY & AREA)</h3>
-        <div style="display:flex; gap:10px; margin-bottom:15px;">
-            <div style="flex:1;">
-                <label style="font-size:11px;">DELIVERY BOYS (Enter names, comma separated)</label>
-                <textarea id="masterBoys" style="width:100%; height:80px; margin-top:5px; padding:5px;"></textarea>
-            </div>
-            <div style="flex:1;">
-                <label style="font-size:11px;">AREAS (Enter areas, comma separated)</label>
-                <textarea id="masterAreas" style="width:100%; height:80px; margin-top:5px; padding:5px;"></textarea>
-            </div>
-        </div>
-        <div style="text-align: right;">
-            <button class="btn" style="background:#bdc3c7; color:#333;" onclick="closeModal('masterModal')">CANCEL</button>
-            <button class="btn" style="background:var(--success);" onclick="saveMasterData()">SAVE SETUP</button>
-        </div>
-    </div>
+    <button class="btn" style="background: #e67e22;" onclick="openMasterModal()">⚙️ MASTER</button>
+    <button class="btn" style="background: #546e7a;" onclick="openAddrModal()">🏠 BRANCH</button>
 </div>
 
 <div id="addrModal" class="modal">
     <div class="modal-content">
         <h3 style="color:var(--dark); margin-top:0;">🏢 BRANCH SETTINGS</h3>
-        <label style="font-size:11px;">BRANCH CODE (FIRST 4 DIGITS)</label>
-        <input type="text" id="setBranchCode" maxlength="4" style="width:100%; padding:8px; margin:4px 0 10px; border:1px solid #ccc; border-radius:5px;">
-        <label style="font-size:11px;">ADDRESS LINE 1</label>
-        <input type="text" id="setAddr1" style="width:100%; padding:8px; margin:4px 0 10px; border:1px solid #ccc; border-radius:5px;">
-        <label style="font-size:11px;">ADDRESS LINE 2</label>
-        <input type="text" id="setAddr2" style="width:100%; padding:8px; margin:4px 0 10px; border:1px solid #ccc; border-radius:5px;">
-        <label style="font-size:11px;">ADDRESS LINE 3 (BOLD)</label>
-        <input type="text" id="setAddr3" style="width:100%; padding:8px; margin:4px 0 10px; border:1px solid #ccc; border-radius:5px;">
-        <label style="font-size:11px;">PHONE NO.</label>
-        <input type="text" id="setPhone" style="width:100%; padding:8px; margin:4px 0 10px; border:1px solid #ccc; border-radius:5px;">
-        <div style="text-align: right;">
-            <button class="btn" style="background:#bdc3c7; color:#333;" onclick="closeModal('addrModal')">CANCEL</button>
-            <button class="btn" style="background:var(--success);" onclick="saveAddress()">UPDATE</button>
-        </div>
-    </div>
-</div>
-
-<div id="trackModal" class="modal">
-    <div class="modal-content" style="width:420px; border-top-color: var(--secondary);">
-        <h3 style="color:var(--secondary); margin-top:0;">🔍 QUICK TRACKING</h3>
-        <div style="display:flex; gap:5px;">
-            <input type="text" id="trackInput" placeholder="ENTER AWB NO." maxlength="10" style="flex:1; padding:12px; border:2px solid var(--secondary); border-radius:8px; font-size:16px;">
-            <button class="btn" style="background:var(--secondary);" onclick="searchAWB()">FIND</button>
-        </div>
-        <div id="trackResult"></div>
-        <div style="text-align: right; margin-top: 15px;">
-            <button class="btn" style="background:#bdc3c7; color:#333;" onclick="closeModal('trackModal')">CLOSE</button>
-        </div>
+        <input type="text" id="setBranchCode" placeholder="BRANCH CODE" style="width:100%; padding:8px; margin-bottom:10px;">
+        <input type="text" id="setAddr1" placeholder="ADDRESS LINE 1" style="width:100%; padding:8px; margin-bottom:10px;">
+        <input type="text" id="setAddr3" placeholder="CITY & PINCODE" style="width:100%; padding:8px; margin-bottom:10px;">
+        <input type="text" id="setPhone" placeholder="PHONE NO." style="width:100%; padding:8px; margin-bottom:10px;">
+        <button class="btn" style="background:var(--success);" onclick="saveAddress()">UPDATE</button>
     </div>
 </div>
 
 <div id="docModal" class="modal">
     <div class="modal-content">
         <h3 id="modalTitle" style="color:var(--primary); margin-top:0;">📦 DOCUMENT ENTRY</h3>
-        <div style="margin-bottom: 12px;">
-            <label style="font-weight:bold;">AWB NO. (10 DIGITS)</label>
-            <input type="text" id="inputBarcode" maxlength="10" style="width:100%; padding:12px; margin-top:5px; box-sizing: border-box; font-size: 18px; border:2px solid #ddd; border-radius:8px;">
-        </div>
-        <div style="margin-bottom: 20px;">
-            <label style="font-weight:bold;">CONSIGNEE NAME</label>
-            <input type="text" id="inputName" style="width:100%; padding:12px; margin-top:5px; box-sizing: border-box; font-size: 18px; border:2px solid #ddd; border-radius:8px;">
-        </div>
-        <div style="text-align: right;">
-            <button class="btn" style="background: #bdc3c7; color: #333;" onclick="closeDocModal()">CLOSE</button>
-            <button class="btn" style="background: var(--success);" onclick="submitEntry()">ADD (ENTER)</button>
-        </div>
-    </div>
-</div>
-
-<div id="historyModal" class="modal">
-    <div class="modal-content" style="width: 85%; max-height: 85vh; overflow-y: auto; border-top: 8px solid #9b59b6;">
-        <h2 style="text-align:center;">📜 DRS HISTORY</h2>
-        <table style="width: 100%; border-collapse: collapse;">
-            <thead><tr style="background: var(--dark); color: white;">
-                <th style="padding:12px;">DRS NO / DATE</th><th style="padding:12px;">BOY</th><th style="padding:12px;">AREA</th><th style="padding:12px;">DOCS</th><th style="padding:12px;">ACTION</th>
-            </tr></thead>
-            <tbody id="history-body"></tbody>
-        </table>
-        <div style="text-align:center; margin-top:20px;"><button class="btn" style="background:black" onclick="closeModal('historyModal')">CLOSE</button></div>
+        <input type="text" id="inputBarcode" maxlength="10" placeholder="AWB NO (10 DIGITS)" style="width:100%; padding:12px; margin-bottom:10px; font-size:18px;">
+        <input type="text" id="inputName" placeholder="CONSIGNEE NAME" style="width:100%; padding:12px; margin-bottom:10px; font-size:18px;">
+        <button class="btn" style="background: var(--success);" onclick="submitEntry()">ADD (ENTER)</button>
+        <button class="btn" style="background: #ccc; color: #000;" onclick="closeDocModal()">CLOSE</button>
     </div>
 </div>
 
 <div id="print-area"></div>
 
 <script>
+    // --- સેટિંગ્સ: અહીં તમારી લિંક નાખો ---
+    const scriptURL = 'https://script.google.com/macros/s/AKfycby6znZl4WvqTbxAKPQNyjXVHyjl8quy7GeYBwSw2BBtuIjDtf0qGuZ0p2cZ1xl030yy/execો'; 
+
     let deliveryData = [];
-    let drsHistory = JSON.parse(localStorage.getItem("drsHistory")) || [];
-    let editIndex = -1;
-    let loadedDrsNo = null;
+    let selectedDate = new Date().toISOString().split('T')[0];
     
-    // Date Logic
-    let today = new Date();
-    let selectedDate = today.toISOString().split('T')[0];
-    document.getElementById("drsDatePicker").value = selectedDate;
-    
-    function formatDateDisplay(dateStr) {
-        const d = new Date(dateStr);
-        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
-    }
-
-    function updateDrsDate(val) {
-        selectedDate = val;
-        renderTable();
-    }
-
-    // Master Logic
-    let masterBoys = JSON.parse(localStorage.getItem("masterBoys")) || ["SURESH", "RAMESH"];
-    let masterAreas = JSON.parse(localStorage.getItem("masterAreas")) || ["BHATAR", "VESU"];
-
-    function updateLists() {
-        document.getElementById("boyList").innerHTML = masterBoys.map(b => `<option value="${b}">`).join("");
-        document.getElementById("areaList").innerHTML = masterAreas.map(a => `<option value="${a}">`).join("");
-    }
-
-    function openMasterModal() {
-        document.getElementById("masterBoys").value = masterBoys.join(", ");
-        document.getElementById("masterAreas").value = masterAreas.join(", ");
-        document.getElementById("masterModal").style.display = "block";
-    }
-
-    function saveMasterData() {
-        masterBoys = document.getElementById("masterBoys").value.split(",").map(x => x.trim().toUpperCase()).filter(x => x);
-        masterAreas = document.getElementById("masterAreas").value.split(",").map(x => x.trim().toUpperCase()).filter(x => x);
-        localStorage.setItem("masterBoys", JSON.stringify(masterBoys));
-        localStorage.setItem("masterAreas", JSON.stringify(masterAreas));
-        updateLists();
-        closeModal('masterModal');
-    }
-
-    // Branch Logic
+    // લોકલ સ્ટોરેજ સેટિંગ્સ
     let branchCode = localStorage.getItem("branchCode") || "1100";
-    let addrL1 = localStorage.getItem("addrL1") || "SHOP NO. 31 RADHA KRISHNA INDUSTRIAL SOCIETY, NAVJIVAN CIRCLE U-M ROAD,";
-    let addrL2 = localStorage.getItem("addrL2") || "";
-    let addrL3 = localStorage.getItem("addrL3") || "SURAT-BHATAR ROAD, SURAT - 395007";
-    let phoneNum = localStorage.getItem("phoneNum") || "PH NO.: 9137334333";
+    let addrL1 = localStorage.getItem("addrL1") || "SHOP NO. 31 RADHA KRISHNA SOC,";
+    let addrL3 = localStorage.getItem("addrL3") || "SURAT - 395007";
+    let phoneNum = localStorage.getItem("phoneNum") || "PH: 9137334333";
+
+    function updateDrsDate(val) { selectedDate = val; renderTable(); }
 
     function validateAndOpenDoc() {
         if(!document.getElementById("deliveryBoy").value.trim() || !document.getElementById("areaName").value.trim()) {
-            alert("⚠️ મહેરબાની કરીને પહેલા DELIVERY BOY અને AREA નું નામ લખો!");
+            alert("⚠️ મહેરબાની કરીને BOY અને AREA લખો!");
             return;
         }
-        openDocModal();
-    }
-
-    function openAddrModal() {
-        document.getElementById("setBranchCode").value = branchCode;
-        document.getElementById("setAddr1").value = addrL1;
-        document.getElementById("setAddr2").value = addrL2;
-        document.getElementById("setAddr3").value = addrL3;
-        document.getElementById("setPhone").value = phoneNum;
-        document.getElementById("addrModal").style.display = "block";
-    }
-
-    function saveAddress() {
-        branchCode = document.getElementById("setBranchCode").value.toUpperCase();
-        addrL1 = document.getElementById("setAddr1").value.toUpperCase();
-        addrL2 = document.getElementById("setAddr2").value.toUpperCase();
-        addrL3 = document.getElementById("setAddr3").value.toUpperCase();
-        phoneNum = document.getElementById("setPhone").value.toUpperCase();
-        localStorage.setItem("branchCode", branchCode);
-        localStorage.setItem("addrL1", addrL1);
-        localStorage.setItem("addrL2", addrL2);
-        localStorage.setItem("addrL3", addrL3);
-        localStorage.setItem("phoneNum", phoneNum);
-        closeModal('addrModal');
-        renderTable();
-    }
-
-    // AWB Entry Logic
-    function openDocModal(idx = -1) {
-        editIndex = idx;
-        document.getElementById("modalTitle").innerText = (idx !== -1) ? "EDIT ENTRY" : "DOCUMENT ENTRY";
-        document.getElementById("inputBarcode").value = (idx !== -1) ? deliveryData[idx].barcode : "";
-        document.getElementById("inputName").value = (idx !== -1) ? deliveryData[idx].name : "";
         document.getElementById("docModal").style.display = "block";
         setTimeout(() => document.getElementById("inputBarcode").focus(), 100);
     }
@@ -273,215 +117,100 @@
         let name = document.getElementById("inputName").value.toUpperCase().trim();
         let barcode = document.getElementById("inputBarcode").value;
         if (name && barcode.length === 10) {
-            if (editIndex !== -1) {
-                deliveryData[editIndex] = { barcode, name };
-                closeDocModal();
-            } else {
-                deliveryData.push({ barcode, name });
-                document.getElementById("inputBarcode").value = "";
-                document.getElementById("inputName").value = "";
-                document.getElementById("inputBarcode").focus();
-                renderTable();
-            }
-        } else {
-            alert("Please enter Name and 10 digit AWB No.");
+            deliveryData.push({ barcode, name });
+            document.getElementById("inputBarcode").value = "";
+            document.getElementById("inputName").value = "";
+            document.getElementById("inputBarcode").focus();
+            renderTable();
         }
-    }
-
-    // Tracking Logic (FIXED & BEAUTIFIED)
-    function openTrackModal() {
-        document.getElementById("trackInput").value = "";
-        document.getElementById("trackResult").innerHTML = "";
-        document.getElementById("trackModal").style.display = "block";
-        setTimeout(() => document.getElementById("trackInput").focus(), 200);
-    }
-
-    function searchAWB() {
-        let awb = document.getElementById("trackInput").value.trim();
-        let resultDiv = document.getElementById("trackResult");
-        
-        if (awb.length !== 10) {
-            resultDiv.innerHTML = `<div style="color:var(--danger); margin-top:15px; font-weight:bold; text-align:center;">⚠️ સાચો 10 આંકડાનો AWB નંબર નાખો!</div>`;
-            return;
-        }
-
-        let found = null;
-        let foundInDrs = null;
-
-        // Search in history
-        drsHistory.forEach(h => {
-            let item = h.items.find(i => i.barcode === awb);
-            if (item) { found = item; foundInDrs = h; }
-        });
-
-        if (found) {
-            resultDiv.innerHTML = `
-                <div class="track-card">
-                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                        <span style="font-size:24px;">📦</span>
-                        <strong style="font-size:18px; color:var(--dark);">${found.barcode}</strong>
-                    </div>
-                    
-                    <div style="margin-bottom:8px;">
-                        <span style="color:#666; font-size:12px;">CONSIGNEE:</span><br>
-                        <span style="font-weight:bold; font-size:16px;">👤 ${found.name}</span>
-                    </div>
-
-                    <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
-                        <div>
-                            <span style="color:#666; font-size:12px;">BOY:</span><br>
-                            <span style="font-weight:bold;">🛵 ${foundInDrs.boy}</span>
-                        </div>
-                        <div>
-                            <span style="color:#666; font-size:12px;">AREA:</span><br>
-                            <span style="font-weight:bold;">📍 ${foundInDrs.area}</span>
-                        </div>
-                    </div>
-
-                    <div class="track-status">✅ OUT FOR DELIVERY</div>
-                    
-                    <div style="margin-top:10px; font-size:11px; color:#888; text-align:right;">
-                        DRS: ${foundInDrs.drsNo} | DATE: ${foundInDrs.date}
-                    </div>
-                </div>
-            `;
-        } else {
-            resultDiv.innerHTML = `
-                <div style="margin-top:20px; padding:15px; border-radius:12px; background:#fff5f5; border:1px solid #feb2b2; text-align:center;">
-                    <span style="font-size:30px;">🚫</span>
-                    <p style="color:#c53030; font-weight:bold; margin-top:5px;">AWB NOT FOUND!</p>
-                    <p style="font-size:12px; color:#666;">હિસ્ટ્રી માં ડેટા મળ્યો નથી.</p>
-                </div>
-            `;
-        }
-    }
-
-    // Table Rendering Logic
-    function generateDRSNumber(offset) {
-        if (loadedDrsNo && offset === 0) return loadedDrsNo;
-        const d = new Date(selectedDate);
-        const datePart = branchCode + d.getFullYear() + (d.getMonth()+1).toString().padStart(2,'0') + d.getDate().toString().padStart(2,'0');
-        let maxSerial = 0;
-        drsHistory.forEach(h => {
-            if (h.drsNo.startsWith(datePart)) {
-                let serial = parseInt(h.drsNo.slice(-2));
-                if (serial > maxSerial) maxSerial = serial;
-            }
-        });
-        return datePart + (maxSerial + 1 + offset).toString().padStart(2, '0');
     }
 
     function renderTable() {
         const printArea = document.getElementById("print-area");
         printArea.innerHTML = "";
         const totalPages = Math.ceil(deliveryData.length / 15) || 1;
+        
         for (let p = 0; p < totalPages; p++) {
             let div = document.createElement("div");
             div.className = "page-break";
             div.innerHTML = `<div class="header-section">
-                    <div>
-                        <div class="logo-main">SHREE ANJANI</div>
-                        <div class="logo-sub">COURIER SERVICES (P) LTD.</div>
-                        <div class="addr-line">${addrL1}</div>
-                        <div class="addr-line">${addrL2}</div>
-                        <div class="addr-bold">${addrL3}</div>
-                        <div class="addr-line">${phoneNum}</div>
-                    </div>
-                    <div class="drs-info">
-                        <div class="drs-title">DELIVERY VOUCHER</div>
-                        <div><b>DRS NO.:</b> ${generateDRSNumber(p)}</div>
-                        <div><b>DATE:</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${formatDateDisplay(selectedDate)}</div>
-                        <div><b>AREA:</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${document.getElementById("areaName").value || '____'}</div>
-                        <div><b>BOY:</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${document.getElementById("deliveryBoy").value || '____'}</div>
-                    </div>
+                <div>
+                    <div class="logo-main">SHREE ANJANI</div>
+                    <div class="logo-sub">COURIER SERVICES (P) LTD.</div>
+                    <div class="addr-line">${addrL1}</div>
+                    <div class="addr-bold">${addrL3}</div>
+                    <div class="addr-line">${phoneNum}</div>
                 </div>
-                <table>
-                    <thead><tr><th class="col-no">NO.</th><th>CONSIGNEE NAME</th><th class="col-awb">AWB NO.</th><th class="col-sign">SIGNATURE / PH NO.</th></tr></thead>
-                    <tbody id="rows-page-${p}"></tbody>
-                </table>
-                <div style="position:absolute; bottom:12px; right:20px; font-size:10px;">PAGE ${p+1} OF ${totalPages}</div>`;
+                <div class="drs-info">
+                    <div class="drs-title">DELIVERY VOUCHER</div>
+                    <div><b>DATE:</b> ${selectedDate}</div>
+                    <div><b>AREA:</b> ${document.getElementById("areaName").value}</div>
+                    <div><b>BOY:</b> ${document.getElementById("deliveryBoy").value}</div>
+                </div>
+            </div>
+            <table>
+                <thead><tr><th class="col-no">NO.</th><th>NAME</th><th class="col-awb">AWB NO.</th><th class="col-sign">SIGNATURE</th></tr></thead>
+                <tbody id="rows-page-${p}"></tbody>
+            </table>`;
             printArea.appendChild(div);
+            
             let tbody = document.getElementById(`rows-page-${p}`);
             let pageItems = deliveryData.slice(p * 15, (p + 1) * 15);
             pageItems.forEach((item, j) => {
-                let globalIdx = (p * 15) + j;
                 let row = tbody.insertRow();
-                row.innerHTML = `<td class="col-no">${globalIdx+1}</td>
-                    <td>${item.name}<div class="row-actions">
-                        <button class="action-btn" style="background:var(--secondary)" onclick="openDocModal(${globalIdx})">EDIT</button>
-                        <button class="action-btn" style="background:var(--danger)" onclick="deleteEntry(${globalIdx})">DEL</button>
-                    </div></td>
-                    <td class="col-awb"><span class="awb-text">${item.barcode}</span><svg id="b-${globalIdx}" style="height:20px; width:115px; display:block; margin:auto;"></svg></td>
-                    <td class="col-sign"></td>`;
-                JsBarcode(`#b-${globalIdx}`, item.barcode, {format:"CODE128", width:1.1, height:20, displayValue:false, margin:0});
+                let idx = (p * 15) + j;
+                row.innerHTML = `<td class="col-no">${idx+1}</td><td>${item.name}</td>
+                    <td class="col-awb">${item.barcode}<svg id="b-${idx}" style="height:20px;"></svg></td><td class="col-sign"></td>`;
+                JsBarcode(`#b-${idx}`, item.barcode, {format:"CODE128", width:1.1, height:20, displayValue:false});
             });
         }
     }
 
-    function saveOrUpdate() {
+    // --- Google Sheet માં સેવ કરવાનું ફંક્શન ---
+    async function saveToCloud() {
         if (deliveryData.length === 0) { alert("એન્ટ્રી ખાલી છે!"); return; }
-        const boy = document.getElementById("deliveryBoy").value.toUpperCase();
-        const area = document.getElementById("areaName").value.toUpperCase();
-        const totalPages = Math.ceil(deliveryData.length / 15);
-        for (let p = 0; p < totalPages; p++) {
-            drsHistory.push({
-                drsNo: generateDRSNumber(p), 
-                boy: boy,
-                area: area,
-                items: deliveryData.slice(p * 15, (p + 1) * 15),
-                date: formatDateDisplay(selectedDate)
+        if (scriptURL.includes('અહીં_તમારી')) { alert("પહેલા Google Script URL સેટ કરો!"); return; }
+
+        const saveBtn = document.getElementById("saveBtn");
+        saveBtn.innerText = "⏳ SAVING...";
+        saveBtn.style.opacity = "0.5";
+
+        const payload = {
+            date: selectedDate,
+            boy: document.getElementById("deliveryBoy").value,
+            area: document.getElementById("areaName").value,
+            items: deliveryData
+        };
+
+        try {
+            await fetch(scriptURL, {
+                method: 'POST',
+                mode: 'no-cors',
+                cache: 'no-cache',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
-        }
-        localStorage.setItem("drsHistory", JSON.stringify(drsHistory));
-        alert("DRS સફળતાપૂર્વક સેવ થઈ ગયું!");
-        resetAll();
-    }
-
-    function showHistory() {
-        const body = document.getElementById("history-body");
-        body.innerHTML = "";
-        drsHistory.slice().reverse().forEach((h) => {
-            body.innerHTML += `<tr>
-                <td onclick="loadHistory('${h.drsNo}')" style="cursor:pointer; color:var(--secondary);">${h.drsNo}<br><small>${h.date}</small></td>
-                <td>${h.boy}</td><td>${h.area}</td><td>${h.items.length}</td>
-                <td>
-                    <button class="btn" style="background:var(--secondary); padding:4px 8px;" onclick="loadHistory('${h.drsNo}')">LOAD</button>
-                    <button class="btn" style="background:var(--danger); padding:4px 8px;" onclick="deleteHistory('${h.drsNo}')">DEL</button>
-                </td></tr>`;
-        });
-        document.getElementById("historyModal").style.display = "block";
-    }
-
-    function loadHistory(drsNo) {
-        let h = drsHistory.find(x => x.drsNo === drsNo);
-        if(h) {
-            deliveryData = [...h.items];
-            loadedDrsNo = h.drsNo;
-            document.getElementById("deliveryBoy").value = h.boy;
-            document.getElementById("areaName").value = h.area;
-            renderTable(); closeModal('historyModal');
+            alert("✅ Google Sheet માં સફળતાપૂર્વક સેવ થઈ ગયું!");
+            deliveryData = [];
+            renderTable();
+        } catch (e) {
+            alert("❌ ભૂલ આવી: " + e.message);
+        } finally {
+            saveBtn.innerText = "☁️ SAVE TO GOOGLE SHEET";
+            saveBtn.style.opacity = "1";
         }
     }
 
-    function closeModal(id) { document.getElementById(id).style.display = "none"; }
-    function closeDocModal() { document.getElementById("docModal").style.display = "none"; renderTable(); }
-    function deleteHistory(drsNo) { if(confirm("નક્કી ડિલીટ કરવું છે?")) { drsHistory = drsHistory.filter(x => x.drsNo !== drsNo); localStorage.setItem("drsHistory", JSON.stringify(drsHistory)); showHistory(); } }
-    function deleteEntry(idx) { if(confirm("ડિલીટ?")) { deliveryData.splice(idx, 1); renderTable(); } }
-    function resetAll() { deliveryData = []; loadedDrsNo = null; renderTable(); }
-    
-    window.onload = function() {
-        updateLists();
-        renderTable();
-    };
+    function openAddrModal() { document.getElementById("addrModal").style.display = "block"; }
+    function closeDocModal() { document.getElementById("docModal").style.display = "none"; }
+    function saveAddress() {
+        localStorage.setItem("addrL1", document.getElementById("setAddr1").value);
+        localStorage.setItem("addrL3", document.getElementById("setAddr3").value);
+        localStorage.setItem("phoneNum", document.getElementById("setPhone").value);
+        location.reload();
+    }
 
-    // Keyboard Listeners
-    document.getElementById("inputName").addEventListener("keypress", (e) => { if (e.key === "Enter") submitEntry(); });
-    document.getElementById("trackInput").addEventListener("keypress", (e) => { if (e.key === "Enter") searchAWB(); });
-    document.getElementById("inputBarcode").oninput = function() {
-        this.value = this.value.replace(/[^0-9]/g, '');
-        if (this.value.length === 10) document.getElementById("inputName").focus();
-    };
+    window.onload = renderTable;
 </script>
 </body>
-
 </html>
