@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Anjani Courier - Cloud Pro</title>
+    <title>Anjani Courier - Pro Cloud</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
         :root { --primary: #f37021; --secondary: #2196F3; --danger: #ff4d4d; --success: #4CAF50; --dark: #2c3e50; }
@@ -17,7 +17,7 @@
         .page-break { width: 210mm; height: 297mm; padding: 8mm 10mm; margin: 15px auto; background: white; box-sizing: border-box; border: 1px solid #ccc; page-break-after: always; overflow: hidden; position: relative; }
         
         .header-section { display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 5px; }
-        .logo-main { font-size: 28px; font-weight: bold; font-style: italic; line-height: 1; }
+        .logo-main { font-size: 28px; font-weight: bold; font-style: italic; color: #000; line-height: 1; }
         .logo-sub { font-size: 13px; font-weight: bold; border-top: 2px solid #000; display: inline-block; margin-top: 2px; }
         
         .addr-line { font-size: 10px; font-weight: normal; display: block; margin-top: 1px; }
@@ -35,13 +35,21 @@
         .col-awb { width: 130px; text-align: center; }
         .col-sign { width: 250px; }
 
+        .row-actions { position: absolute; right: 2px; top: 2px; display: none; gap: 2px; background: rgba(255,255,255,0.9); padding: 2px; border-radius: 4px; }
+        tr:hover .row-actions { display: flex; }
+        .action-btn { padding: 4px 8px; font-size: 12px; cursor: pointer; border: none; border-radius: 3px; color: white; }
+
         .modal { display: none; position: fixed; z-index: 200; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
-        .modal-content { background: white; margin: 2% auto; padding: 25px; width: 400px; border-radius: 15px; box-shadow: 0 15px 40px rgba(0,0,0,0.4); position: relative; border-top: 8px solid var(--primary); }
+        .modal-content { background: white; margin: 2% auto; padding: 25px; width: 450px; border-radius: 15px; box-shadow: 0 15px 40px rgba(0,0,0,0.4); border-top: 8px solid var(--primary); }
         
-        .btn { padding: 10px 18px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; color: white; font-size: 13px; transition: 0.3s; }
+        .btn { padding: 10px 18px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; color: white; font-size: 13px; transition: 0.3s; display: inline-flex; align-items: center; gap: 5px; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+
+        .search-box { background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: flex; gap: 5px; border: 1px solid #ddd; }
+        .search-box input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
 
         @media print {
-            .no-print, .modal, .top-info, .row-actions, .search-icon-btn { display: none !important; }
+            .no-print, .modal, .top-info, .row-actions { display: none !important; }
             .page-break { margin: 0; border: none; width: 100%; box-shadow: none; padding: 8mm 10mm; height: 297mm; }
             @page { size: A4; margin: 0; }
         }
@@ -50,54 +58,83 @@
 <body>
 
 <div class="top-info">
-    DATE: <input type="date" id="drsDatePicker" onchange="updateDrsDate(this.value)" style="width:140px;">
-    BOY: <input type="text" id="deliveryBoy" list="boyList" placeholder="NAME" oninput="renderTable()">
+    DATE: <input type="date" id="drsDatePicker" onchange="updateDrsDate(this.value)">
+    BOY: <input type="text" id="deliveryBoy" list="boyList" placeholder="NAME" oninput="updateLists()">
     <datalist id="boyList"></datalist>
-
-    AREA: <input type="text" id="areaName" list="areaList" placeholder="AREA" oninput="renderTable()">
+    AREA: <input type="text" id="areaName" list="areaList" placeholder="AREA" oninput="updateLists()">
     <datalist id="areaList"></datalist>
 </div>
 
 <div class="no-print">
     <button class="btn" style="background: var(--secondary);" onclick="validateAndOpenDoc()">+ ADD DOC</button>
-    <button id="saveBtn" class="btn" style="background: var(--success);" onclick="saveToCloud()">☁️ SAVE TO GOOGLE SHEET</button>
+    <button class="btn" id="saveCloudBtn" style="background: var(--success);" onclick="saveToCloud()">☁️ SAVE TO CLOUD</button>
     <button class="btn" style="background: var(--primary);" onclick="window.print()">🖨️ PRINT</button>
+    <button class="btn" style="background: #9b59b6;" onclick="showHistory()">📜 HISTORY</button>
     <button class="btn" style="background: #e67e22;" onclick="openMasterModal()">⚙️ MASTER</button>
     <button class="btn" style="background: #546e7a;" onclick="openAddrModal()">🏠 BRANCH</button>
+    <button class="btn" style="background: var(--danger);" onclick="resetAll()">🔄 CLEAR</button>
+</div>
+
+<div id="historyModal" class="modal">
+    <div class="modal-content" style="width: 600px; max-height: 80vh; overflow-y: auto;">
+        <h3>📜 DRS HISTORY (LOCAL)</h3>
+        <div id="historyList"></div>
+        <button class="btn" style="background:#ccc; color:black; width:100%; margin-top:10px;" onclick="closeModal('historyModal')">CLOSE</button>
+    </div>
+</div>
+
+<div id="masterModal" class="modal">
+    <div class="modal-content">
+        <h3>⚙️ MASTER SETTINGS</h3>
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+            <div style="flex:1;">
+                <label>BOYS (Comma separated)</label>
+                <textarea id="masterBoys" style="width:100%; height:100px;"></textarea>
+            </div>
+            <div style="flex:1;">
+                <label>AREAS (Comma separated)</label>
+                <textarea id="masterAreas" style="width:100%; height:100px;"></textarea>
+            </div>
+        </div>
+        <button class="btn" style="background:var(--success); width:100%;" onclick="saveMaster()">SAVE MASTER</button>
+    </div>
 </div>
 
 <div id="addrModal" class="modal">
     <div class="modal-content">
-        <h3 style="color:var(--dark); margin-top:0;">🏢 BRANCH SETTINGS</h3>
-        <input type="text" id="setBranchCode" placeholder="BRANCH CODE" style="width:100%; padding:8px; margin-bottom:10px;">
-        <input type="text" id="setAddr1" placeholder="ADDRESS LINE 1" style="width:100%; padding:8px; margin-bottom:10px;">
-        <input type="text" id="setAddr3" placeholder="CITY & PINCODE" style="width:100%; padding:8px; margin-bottom:10px;">
-        <input type="text" id="setPhone" placeholder="PHONE NO." style="width:100%; padding:8px; margin-bottom:10px;">
-        <button class="btn" style="background:var(--success);" onclick="saveAddress()">UPDATE</button>
+        <h3>🏢 BRANCH SETTINGS</h3>
+        <input type="text" id="setAddr1" placeholder="ADDRESS LINE 1" style="width:100%; margin-bottom:10px; padding:8px;">
+        <input type="text" id="setAddr3" placeholder="CITY & PINCODE" style="width:100%; margin-bottom:10px; padding:8px;">
+        <input type="text" id="setPhone" placeholder="PHONE NO." style="width:100%; margin-bottom:10px; padding:8px;">
+        <button class="btn" style="background:var(--success); width:100%;" onclick="saveAddress()">UPDATE</button>
     </div>
 </div>
 
 <div id="docModal" class="modal">
     <div class="modal-content">
-        <h3 id="modalTitle" style="color:var(--primary); margin-top:0;">📦 DOCUMENT ENTRY</h3>
+        <h3 id="modalTitle">📦 DOCUMENT ENTRY</h3>
+        <div class="search-box">
+            <input type="text" id="trackInput" placeholder="SEARCH IN HISTORY...">
+            <button class="btn" style="background:var(--secondary);" onclick="searchAWB()">🔍</button>
+        </div>
         <input type="text" id="inputBarcode" maxlength="10" placeholder="AWB NO (10 DIGITS)" style="width:100%; padding:12px; margin-bottom:10px; font-size:18px;">
         <input type="text" id="inputName" placeholder="CONSIGNEE NAME" style="width:100%; padding:12px; margin-bottom:10px; font-size:18px;">
-        <button class="btn" style="background: var(--success);" onclick="submitEntry()">ADD (ENTER)</button>
-        <button class="btn" style="background: #ccc; color: #000;" onclick="closeDocModal()">CLOSE</button>
+        <button class="btn" style="background: var(--success); width:100%; height:50px;" onclick="submitEntry()">ADD (ENTER)</button>
+        <button class="btn" style="background: #eee; color: #333; width:100%; margin-top:10px;" onclick="closeDocModal()">CANCEL</button>
     </div>
 </div>
 
 <div id="print-area"></div>
 
 <script>
-    // --- સેટિંગ્સ: અહીં તમારી લિંક નાખો ---
-    const scriptURL = 'https://script.google.com/macros/s/AKfycby6znZl4WvqTbxAKPQNyjXVHyjl8quy7GeYBwSw2BBtuIjDtf0qGuZ0p2cZ1xl030yy/execો'; 
+    // --- CONFIGURATION ---
+    const scriptURL = 'https://script.google.com/macros/s/AKfycby6znZl4WvqTbxAKPQNyjXVHyjl8quy7GeYBwSw2BBtuIjDtf0qGuZ0p2cZ1xl030yy/exec'; 
 
     let deliveryData = [];
+    let drsHistory = JSON.parse(localStorage.getItem("drsHistory") || "[]");
     let selectedDate = new Date().toISOString().split('T')[0];
-    
-    // લોકલ સ્ટોરેજ સેટિંગ્સ
-    let branchCode = localStorage.getItem("branchCode") || "1100";
+    document.getElementById("drsDatePicker").value = selectedDate;
+
     let addrL1 = localStorage.getItem("addrL1") || "SHOP NO. 31 RADHA KRISHNA SOC,";
     let addrL3 = localStorage.getItem("addrL3") || "SURAT - 395007";
     let phoneNum = localStorage.getItem("phoneNum") || "PH: 9137334333";
@@ -106,11 +143,10 @@
 
     function validateAndOpenDoc() {
         if(!document.getElementById("deliveryBoy").value.trim() || !document.getElementById("areaName").value.trim()) {
-            alert("⚠️ મહેરબાની કરીને BOY અને AREA લખો!");
-            return;
+            alert("PAHELA BOY ANE AREA LAKHO!"); return;
         }
         document.getElementById("docModal").style.display = "block";
-        setTimeout(() => document.getElementById("inputBarcode").focus(), 100);
+        document.getElementById("inputBarcode").focus();
     }
 
     function submitEntry() {
@@ -128,12 +164,14 @@
     function renderTable() {
         const printArea = document.getElementById("print-area");
         printArea.innerHTML = "";
+        if(deliveryData.length === 0 && !document.getElementById("deliveryBoy").value) return;
+
         const totalPages = Math.ceil(deliveryData.length / 15) || 1;
-        
         for (let p = 0; p < totalPages; p++) {
             let div = document.createElement("div");
             div.className = "page-break";
-            div.innerHTML = `<div class="header-section">
+            div.innerHTML = `
+            <div class="header-section">
                 <div>
                     <div class="logo-main">SHREE ANJANI</div>
                     <div class="logo-sub">COURIER SERVICES (P) LTD.</div>
@@ -157,60 +195,97 @@
             let tbody = document.getElementById(`rows-page-${p}`);
             let pageItems = deliveryData.slice(p * 15, (p + 1) * 15);
             pageItems.forEach((item, j) => {
+                let realIdx = (p * 15) + j;
                 let row = tbody.insertRow();
-                let idx = (p * 15) + j;
-                row.innerHTML = `<td class="col-no">${idx+1}</td><td>${item.name}</td>
-                    <td class="col-awb">${item.barcode}<svg id="b-${idx}" style="height:20px;"></svg></td><td class="col-sign"></td>`;
-                JsBarcode(`#b-${idx}`, item.barcode, {format:"CODE128", width:1.1, height:20, displayValue:false});
+                row.innerHTML = `<td class="col-no">${realIdx+1}</td><td>${item.name}</td>
+                    <td class="col-awb">${item.barcode}<svg id="b-${realIdx}" style="height:20px;"></svg>
+                    <div class="row-actions no-print"><button class="action-btn" style="background:var(--secondary)" onclick="editEntry(${realIdx})">✎</button>
+                    <button class="action-btn" style="background:var(--danger)" onclick="deleteEntry(${realIdx})">✕</button></div></td><td class="col-sign"></td>`;
+                JsBarcode(`#b-${realIdx}`, item.barcode, {format:"CODE128", width:1.1, height:20, displayValue:false});
             });
         }
     }
 
-    // --- Google Sheet માં સેવ કરવાનું ફંક્શન ---
     async function saveToCloud() {
-        if (deliveryData.length === 0) { alert("એન્ટ્રી ખાલી છે!"); return; }
-        if (scriptURL.includes('અહીં_તમારી')) { alert("પહેલા Google Script URL સેટ કરો!"); return; }
-
-        const saveBtn = document.getElementById("saveBtn");
-        saveBtn.innerText = "⏳ SAVING...";
-        saveBtn.style.opacity = "0.5";
-
-        const payload = {
+        if (deliveryData.length === 0) { alert("DATA NATHI!"); return; }
+        
+        const entry = {
+            drsNo: Date.now(),
             date: selectedDate,
             boy: document.getElementById("deliveryBoy").value,
             area: document.getElementById("areaName").value,
-            items: deliveryData
+            items: [...deliveryData]
         };
 
-        try {
-            await fetch(scriptURL, {
-                method: 'POST',
-                mode: 'no-cors',
-                cache: 'no-cache',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            alert("✅ Google Sheet માં સફળતાપૂર્વક સેવ થઈ ગયું!");
-            deliveryData = [];
-            renderTable();
-        } catch (e) {
-            alert("❌ ભૂલ આવી: " + e.message);
-        } finally {
-            saveBtn.innerText = "☁️ SAVE TO GOOGLE SHEET";
-            saveBtn.style.opacity = "1";
+        // Local Save
+        drsHistory.unshift(entry);
+        localStorage.setItem("drsHistory", JSON.stringify(drsHistory.slice(0, 50)));
+
+        // Cloud Save
+        if (scriptURL && !scriptURL.includes('TARI_GOOGLE')) {
+            document.getElementById("saveCloudBtn").innerText = "⏳ SAVING...";
+            try {
+                await fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(entry) });
+                alert("DONE! CLOUD & LOCAL BOTH SAVED.");
+            } catch (e) { alert("CLOUD ERROR BUT LOCAL SAVED."); }
+            document.getElementById("saveCloudBtn").innerText = "☁️ SAVE TO CLOUD";
+        } else { alert("LOCAL HISTORY MA SAVE THAI GAYU!"); }
+    }
+
+    function showHistory() {
+        document.getElementById("historyModal").style.display = "block";
+        const list = document.getElementById("historyList");
+        list.innerHTML = drsHistory.map(h => `
+            <div style="border:1px solid #ddd; padding:8px; margin-bottom:5px; display:flex; justify-content:space-between;">
+                <span><b>${h.date}</b> - ${h.boy} (${h.items.length} PKT)</span>
+                <button onclick="loadHistory(${h.drsNo})">LOAD</button>
+            </div>`).join('') || "NO HISTORY";
+    }
+
+    function loadHistory(drsNo) {
+        const h = drsHistory.find(x => x.drsNo === drsNo);
+        if(h) {
+            deliveryData = [...h.items];
+            document.getElementById("deliveryBoy").value = h.boy;
+            document.getElementById("areaName").value = h.area;
+            renderTable(); closeModal('historyModal');
         }
     }
 
-    function openAddrModal() { document.getElementById("addrModal").style.display = "block"; }
-    function closeDocModal() { document.getElementById("docModal").style.display = "none"; }
-    function saveAddress() {
-        localStorage.setItem("addrL1", document.getElementById("setAddr1").value);
-        localStorage.setItem("addrL3", document.getElementById("setAddr3").value);
-        localStorage.setItem("phoneNum", document.getElementById("setPhone").value);
-        location.reload();
+    function searchAWB() {
+        const val = document.getElementById("trackInput").value;
+        for(let h of drsHistory) {
+            let found = h.items.find(i => i.barcode.includes(val));
+            if(found) { document.getElementById("inputName").value = found.name; document.getElementById("inputBarcode").value = found.barcode; return; }
+        }
     }
 
-    window.onload = renderTable;
+    function editEntry(idx) {
+        let item = deliveryData[idx];
+        document.getElementById("inputBarcode").value = item.barcode;
+        document.getElementById("inputName").value = item.name;
+        deliveryData.splice(idx, 1);
+        document.getElementById("docModal").style.display = "block";
+        renderTable();
+    }
+
+    function deleteEntry(idx) { if(confirm("DELETE?")) { deliveryData.splice(idx, 1); renderTable(); } }
+    function resetAll() { if(confirm("CLEAR ALL?")) { deliveryData = []; renderTable(); } }
+    function closeModal(id) { document.getElementById(id).style.display = "none"; }
+    function closeDocModal() { closeModal('docModal'); renderTable(); }
+    function openMasterModal() { document.getElementById("masterModal").style.display = "block"; document.getElementById("masterBoys").value = localStorage.getItem("masterBoys") || ""; document.getElementById("masterAreas").value = localStorage.getItem("masterAreas") || ""; }
+    function saveMaster() { localStorage.setItem("masterBoys", document.getElementById("masterBoys").value); localStorage.setItem("masterAreas", document.getElementById("masterAreas").value); updateLists(); closeModal('masterModal'); }
+    function updateLists() {
+        const boys = (localStorage.getItem("masterBoys") || "").split(",").map(s => s.trim());
+        const areas = (localStorage.getItem("masterAreas") || "").split(",").map(s => s.trim());
+        document.getElementById("boyList").innerHTML = boys.map(b => `<option value="${b}">`).join('');
+        document.getElementById("areaList").innerHTML = areas.map(a => `<option value="${a}">`).join('');
+    }
+    function openAddrModal() { document.getElementById("addrModal").style.display = "block"; document.getElementById("setAddr1").value = addrL1; document.getElementById("setAddr3").value = addrL3; document.getElementById("setPhone").value = phoneNum; }
+    function saveAddress() { localStorage.setItem("addrL1", document.getElementById("setAddr1").value); localStorage.setItem("addrL3", document.getElementById("setAddr3").value); localStorage.setItem("phoneNum", document.getElementById("setPhone").value); location.reload(); }
+
+    window.onload = () => { updateLists(); renderTable(); };
+    document.addEventListener("keydown", (e) => { if(e.key === "Enter" && document.getElementById("docModal").style.display === "block") submitEntry(); });
 </script>
 </body>
 </html>
