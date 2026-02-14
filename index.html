@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Anjani Courier - Pro (Multi-User)</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --primary: #f37021; --secondary: #2196F3; --danger: #ff4d4d; --success: #4CAF50; --dark: #2c3e50; }
         body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background-color: #ecf0f1; text-transform: uppercase; }
@@ -175,6 +176,12 @@
     <div id="docModal" class="modal">
         <div class="modal-content">
             <h3 id="modalTitle" style="color:var(--primary); margin-top:0;">📦 DOCUMENT ENTRY</h3>
+            
+            <div style="text-align: center; margin-bottom: 15px;">
+                <button class="btn" style="background: var(--dark); width: 100%;" onclick="toggleScanner()">📸 OPEN SCANNER</button>
+                <div id="reader" style="width: 100%; margin-top: 10px; display: none; border: 2px solid var(--primary); border-radius: 8px; overflow: hidden;"></div>
+            </div>
+
             <div style="margin-bottom: 12px;">
                 <label style="font-weight:bold;">AWB NO. (10 DIGITS)</label>
                 <input type="text" id="inputBarcode" maxlength="10" style="width:100%; padding:12px; margin-top:5px; box-sizing: border-box; font-size: 18px; border:2px solid #ddd; border-radius:8px;">
@@ -211,6 +218,7 @@
     let drsHistory = JSON.parse(localStorage.getItem("drsHistory")) || [];
     let editIndex = -1;
     let loadedDrsNo = null;
+    let html5QrCode; // Scanner Instance
 
     // --- AUTH & AUTO-DEACTIVATE LOGIC ---
     const VALID_PASS = "anjani@drs123";
@@ -246,9 +254,8 @@
             if (timeLeft <= 0) {
                 clearInterval(statusCheckInterval);
                 deactivateSystem();
-                location.reload(); // Reload to show login
+                location.reload(); 
             } else {
-                // Time calculation for display
                 const hours = Math.floor(timeLeft / (1000 * 60 * 60));
                 const mins = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
                 const secs = Math.floor((timeLeft % (1000 * 60)) / 1000);
@@ -310,7 +317,37 @@
         renderTable();
     }
 
-    // --- REMAINING ORIGINAL LOGIC (SAME AS BEFORE) ---
+    // --- SCANNER LOGIC ---
+    function toggleScanner() {
+        const readerDiv = document.getElementById('reader');
+        if (readerDiv.style.display === 'none') {
+            readerDiv.style.display = 'block';
+            startScanning();
+        } else {
+            stopScanning();
+            readerDiv.style.display = 'none';
+        }
+    }
+
+    function startScanning() {
+        html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+        html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+            let cleanCode = decodedText.replace(/[^0-9]/g, '').slice(0, 10);
+            document.getElementById("inputBarcode").value = cleanCode;
+            stopScanning();
+            document.getElementById('reader').style.display = 'none';
+            setTimeout(() => document.getElementById("inputName").focus(), 200);
+        }).catch(err => alert("Camera Error: " + err));
+    }
+
+    function stopScanning() {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().catch(err => console.log(err));
+        }
+    }
+
+    // --- MAIN APP LOGIC ---
     let selectedDate = new Date().toISOString().split('T')[0];
     document.getElementById("drsDatePicker").value = selectedDate;
     
@@ -536,7 +573,14 @@
     }
 
     function closeModal(id) { document.getElementById(id).style.display = "none"; }
-    function closeDocModal() { document.getElementById("docModal").style.display = "none"; renderTable(); }
+    
+    function closeDocModal() { 
+        stopScanning(); // સ્કેનર બંધ કરો
+        document.getElementById('reader').style.display = 'none';
+        document.getElementById("docModal").style.display = "none"; 
+        renderTable(); 
+    }
+
     function deleteHistory(drsNo) { if(confirm("નક્કી ડિલીટ કરવું છે?")) { drsHistory = drsHistory.filter(x => x.drsNo !== drsNo); localStorage.setItem("drsHistory", JSON.stringify(drsHistory)); showHistory(); } }
     function deleteEntry(idx) { if(confirm("ડિલીટ?")) { deliveryData.splice(idx, 1); renderTable(); } }
     function resetAll() { deliveryData = []; loadedDrsNo = null; renderTable(); }
